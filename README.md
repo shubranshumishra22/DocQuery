@@ -2,6 +2,8 @@
 
 **AI-powered document Q&A with grounded answers, source attribution, and conflict detection.**
 
+🚀 **Live Deployment:** [shubranshumishra22-docquery-app-po1nsf.streamlit.app](https://shubranshumishra22-docquery-app-po1nsf.streamlit.app/)
+
 DocQuery lets you upload PDF, TXT, and Markdown files, then ask natural-language questions that are answered *strictly* from the uploaded content — never fabricated. It detects when sources disagree, flags low-confidence answers, and shows exactly which snippet supports every claim.
 
 ---
