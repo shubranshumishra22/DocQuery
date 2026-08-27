@@ -17,7 +17,7 @@ from ingestion import (
 )
 from retrieval import (
     rewrite_question, detect_scope, detect_comparison,
-    retrieve_chunks, RELEVANCE_THRESHOLD,
+    retrieve_chunks, BASE_RELEVANCE_THRESHOLD as RELEVANCE_THRESHOLD,
 )
 from generation import generate_answer, _parse_json_response, _call_llm_with_retry
 from langchain_google_genai import ChatGoogleGenerativeAI
