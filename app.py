@@ -67,18 +67,32 @@ def init_session_state():
 
 def load_api_keys() -> List[str]:
     """
-    Load API keys from environment variables (loaded from .env).
+    Load API keys from environment variables or Streamlit Cloud secrets.
     Returns a list of keys to try in order — first success wins.
     This provides automatic fallback when a key hits rate limits.
     """
     keys = []
+
+    # Streamlit Cloud secrets (deployed) or .env (local)
+    try:
+        keys.append(st.secrets["GOOGLE_API_KEY"])
+    except (KeyError, FileNotFoundError):
+        pass
+
+    try:
+        keys.append(st.secrets["GEMINI_API_KEY"])
+    except (KeyError, FileNotFoundError):
+        pass
+
+    # Environment variables fallback
     primary = os.environ.get("GOOGLE_API_KEY", "")
-    if primary:
+    if primary and primary not in keys:
         keys.append(primary)
     secondary = os.environ.get("GEMINI_API_KEY", "")
     if secondary and secondary not in keys:
         keys.append(secondary)
-    return keys
+
+    return [k for k in keys if k]
 
 
 def get_llm(api_key: str) -> ChatGoogleGenerativeAI:
