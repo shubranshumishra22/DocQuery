@@ -33,7 +33,7 @@ def log(test_num, name, status, detail=""):
 
 
 def get_llm():
-    return ChatGoogleGenerativeAI(model="gemini-2.5-flash", google_api_key=API_KEY, temperature=0.1)
+    return ChatGoogleGenerativeAI(model="models/gemini-flash-lite-latest", google_api_key=API_KEY, temperature=0.1)
 
 
 def reset_collection():

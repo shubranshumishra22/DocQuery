@@ -112,18 +112,37 @@ def get_llm(api_key: str) -> ChatGoogleGenerativeAI:
 # UI Rendering Helpers
 # ---------------------------------------------------------------------------
 
+import html
+import time
+
+def stream_text(text: str):
+    """
+    Generator function yielding word tokens with a short delay for st.write_stream.
+    Renders generated answers token by token for enhanced user experience.
+    """
+    words = text.split(" ")
+    for i, word in enumerate(words):
+        yield word + (" " if i < len(words) - 1 else "")
+        time.sleep(0.012)
+
+
 def render_sources(citations: List[Dict], label: str = "Sources"):
     """
-    Render an expandable sources section showing each citation:
-    filename, page/section, and the exact snippet used.
-    Users can verify answers against original documents.
+    Render an expandable sources section with IN-SOURCE HIGHLIGHTING:
+    Highlights exact sentence/snippet citations with a styled marker.
     """
     if not citations:
         return
     with st.expander(label, expanded=False):
         for i, cit in enumerate(citations, 1):
-            st.markdown(f"**{i}.** `{cit['doc']}` — {cit['location']}")
-            st.markdown(f"> {cit['snippet']}")
+            doc = html.escape(str(cit.get('doc', '')))
+            loc = html.escape(str(cit.get('location', '')))
+            snippet = html.escape(str(cit.get('snippet', '')))
+            st.markdown(f"**{i}.** `{doc}` — {loc}")
+            st.markdown(
+                f"> <mark style='background-color: #fff3bf; color: #212529; padding: 2px 6px; border-radius: 4px; font-weight: 500;'>{snippet}</mark>",
+                unsafe_allow_html=True
+            )
 
 
 def render_conflict(conflicting_values: List[Dict]):
@@ -141,14 +160,14 @@ def render_conflict(conflicting_values: List[Dict]):
             st.markdown(f"**Source:** {val.get('source', 'N/A')}")
 
 
-def render_answer(result: Dict, msg_index: int):
+def render_answer(result: Dict, msg_index: int, is_new: bool = False):
     """
     Render a single answer turn with all UI elements:
     - "Not found" message if answer doesn't exist in docs
     - Conflict warning with side-by-side values
-    - The answer text itself
+    - The answer text (streamed token-by-token if new turn)
     - Low confidence badge if applicable
-    - Expandable sources section
+    - Expandable sources section with in-source highlighting
     """
     if result.get("not_found"):
         st.info("I couldn't find this in the uploaded documents.")
@@ -157,7 +176,11 @@ def render_answer(result: Dict, msg_index: int):
     if result.get("conflict"):
         render_conflict(result.get("conflicting_values", []))
 
-    st.markdown(result.get("answer", ""))
+    answer_text = result.get("answer", "")
+    if is_new and answer_text:
+        st.write_stream(stream_text(answer_text))
+    else:
+        st.markdown(answer_text)
 
     if result.get("confidence") == "Low":
         st.caption("⚠️ Low confidence — the answer may be incomplete or weakly supported.")
@@ -236,6 +259,29 @@ def handle_ingestion(api_key: str, collection):
                             st.rerun()
                         else:
                             st.error("Failed to remove")
+
+        # Session Export (Bonus feature: download full session with citations)
+        if st.session_state.chat_history:
+            st.divider()
+            st.header("Export Session")
+            export_lines = ["# DocQuery Q&A Session Export\n"]
+            for turn in st.session_state.chat_history:
+                role = "User" if turn["role"] == "user" else "Assistant"
+                content = turn.get("content", "")
+                export_lines.append(f"### {role}\n{content}\n")
+                if turn.get("result", {}).get("citations"):
+                    export_lines.append("**Citations:**")
+                    for cit in turn["result"]["citations"]:
+                        export_lines.append(f"- `{cit['doc']}` ({cit['location']}): {cit['snippet']}")
+                    export_lines.append("")
+
+            export_text = "\n".join(export_lines)
+            st.download_button(
+                label="📥 Export Session (Markdown)",
+                data=export_text,
+                file_name="docquery_session_export.md",
+                mime="text/markdown",
+            )
 
 
 # ---------------------------------------------------------------------------
@@ -358,8 +404,8 @@ def handle_chat(api_key: str, collection):
                     "confidence": "Low",
                 }
 
-            # --- Render the answer ---
-            render_answer(result_dict, len(st.session_state.chat_history))
+            # --- Render the answer (streamed token-by-token) ---
+            render_answer(result_dict, len(st.session_state.chat_history), is_new=True)
 
             # --- Persist to chat history ---
             st.session_state.chat_history.append({
