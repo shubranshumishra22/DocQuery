@@ -368,7 +368,8 @@ def run_golden_set():
         elif g["expected_behavior"] == "conflict":
             correct = r["conflict"] == True
         else:
-            correct = g["expected_answer"].lower() in r["answer"].lower()
+            expected_terms = [t.strip().lower() for t in g["expected_answer"].split(",")]
+            correct = all(term in r["answer"].lower() for term in expected_terms)
 
         # Groundedness: check citations exist
         grounded = len(r["citations"]) > 0
