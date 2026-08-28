@@ -25,6 +25,8 @@ edge cases are solved in code *before* the LLM is called — not by prompting al
 
 ## 2. Architecture
 
+![System Architecture Diagram](architecture.png)
+
 ```
 INGESTION PIPELINE
 File upload → Type/validity check → PyMuPDF/text loader → Chunk + tag metadata

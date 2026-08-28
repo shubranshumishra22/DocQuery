@@ -40,6 +40,8 @@ A: ⚠️ Sources disagree
 
 ## Architecture
 
+![System Architecture](architecture.png)
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │  app.py                                                     │
